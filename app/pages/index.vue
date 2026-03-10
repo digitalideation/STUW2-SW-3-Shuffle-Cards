@@ -21,7 +21,7 @@ function join() {
       </div>
 
       <!-- Form -->
-      <form @submit.prevent="join" class="bg-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+      <div class="bg-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
         <div>
           <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
             Your Name
@@ -51,14 +51,25 @@ function join() {
           />
         </div>
 
-        <button
-          type="submit"
-          :disabled="!playerName.trim() || !roomCode.trim()"
-          class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg py-2.5 text-sm transition-colors mt-2"
-        >
-          Join Room →
-        </button>
-      </form>
+        <div class="flex gap-2 mt-2">
+          <button
+            type="button"
+            :disabled="!playerName.trim() || !roomCode.trim()"
+            @click="navigateTo(`/room/${roomCode.trim().toUpperCase()}`)"
+            class="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg py-2.5 text-sm transition-colors"
+          >
+            🔀 Shuffle Demo
+          </button>
+          <button
+            type="button"
+            :disabled="!playerName.trim() || !roomCode.trim()"
+            @click="navigateTo(`/game/${roomCode.trim().toUpperCase()}`)"
+            class="flex-1 bg-emerald-700 hover:bg-emerald-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg py-2.5 text-sm transition-colors"
+          >
+            🃏 Card Game
+          </button>
+        </div>
+      </div>
 
       <p class="text-center text-slate-600 text-xs mt-6">
         Anyone in the same room sees shuffles instantly via Supabase Realtime
