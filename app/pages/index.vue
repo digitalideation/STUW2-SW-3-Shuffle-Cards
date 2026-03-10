@@ -1,29 +1,68 @@
 <script setup lang="ts">
-const username = useState<string>("username", () => "");
+const playerName = useState<string>('playerName', () => '')
+const roomCode = ref('DEMO')
 
-function goToChatroom() {
-  console.log(username.value);
-  if (!username.value.trim()) return;
-  navigateTo("/chatroom");
+function join() {
+  const name = playerName.value.trim()
+  const room = roomCode.value.trim().toUpperCase()
+  if (!name || !room) return
+  navigateTo(`/room/${room}`)
 }
 </script>
 
 <template>
-  <main class="max-w-md mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-4">HSLU Chat</h1>
+  <main class="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+    <div class="w-full max-w-sm">
+      <!-- Logo -->
+      <div class="text-center mb-8">
+        <div class="text-6xl mb-3">🂠</div>
+        <h1 class="text-3xl font-bold text-white tracking-tight">Card Shuffle</h1>
+        <p class="text-slate-400 mt-1 text-sm">Realtime multi-player deck demo</p>
+      </div>
 
-    <form action="" @submit.prevent="goToChatroom">
-      <label class="block text-sm font-medium text-gray-700" for="username"
-        >Enter Your Username</label
-      >
-      <input
-        class="border-2 border-gray-300 rounded-md p-2"
-        v-model="username"
-        type="text"
-      />
-      <button class="bg-blue-500 text-white rounded-md p-2" type="submit">
-        Submit
-      </button>
-    </form>
+      <!-- Form -->
+      <form @submit.prevent="join" class="bg-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+            Your Name
+          </label>
+          <input
+            v-model="playerName"
+            type="text"
+            placeholder="e.g. Alice"
+            maxlength="20"
+            autocomplete="off"
+            class="w-full bg-slate-700 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+            Room Code
+          </label>
+          <input
+            v-model="roomCode"
+            type="text"
+            placeholder="e.g. DEMO"
+            maxlength="12"
+            autocomplete="off"
+            @input="roomCode = (roomCode).toUpperCase()"
+            class="w-full bg-slate-700 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-500 transition tracking-widest"
+          />
+        </div>
+
+        <button
+          type="submit"
+          :disabled="!playerName.trim() || !roomCode.trim()"
+          class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg py-2.5 text-sm transition-colors mt-2"
+        >
+          Join Room →
+        </button>
+      </form>
+
+      <p class="text-center text-slate-600 text-xs mt-6">
+        Anyone in the same room sees shuffles instantly via Supabase Realtime
+      </p>
+    </div>
   </main>
 </template>
