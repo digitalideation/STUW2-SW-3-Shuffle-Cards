@@ -24,29 +24,29 @@ A teaching project demonstrating **server-authoritative state**, **Supabase Real
 
 ## 1. What You Will Learn
 
-| Concept | Where it appears |
-|---|---|
-| **Server-authoritative state** | Edge Functions own all game logic; clients only display |
-| **Supabase Realtime** (`postgres_changes`) | Every DB write is broadcast to all subscribed clients |
-| **Supabase Edge Functions** | Deno-based serverless functions deployed at the edge |
-| **JSONB columns as documents** | Storing dynamic game state (hands, players, ready map) |
-| **Row-Level Security (RLS)** | Controlling who can read/write the `games` table |
-| **Race conditions & why they matter** | The dealing problem: two clients must not draw the same card |
-| **Lobby pattern** | Synchronising multiple players before a game begins |
-| **Nuxt 3 Composition API** | `useState`, `useRuntimeConfig`, `onMounted`, `computed` |
+| Concept                                    | Where it appears                                             |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| **Server-authoritative state**             | Edge Functions own all game logic; clients only display      |
+| **Supabase Realtime** (`postgres_changes`) | Every DB write is broadcast to all subscribed clients        |
+| **Supabase Edge Functions**                | Deno-based serverless functions deployed at the edge         |
+| **JSONB columns as documents**             | Storing dynamic game state (hands, players, ready map)       |
+| **Row-Level Security (RLS)**               | Controlling who can read/write the `games` table             |
+| **Race conditions & why they matter**      | The dealing problem: two clients must not draw the same card |
+| **Lobby pattern**                          | Synchronising multiple players before a game begins          |
+| **Nuxt 3 Composition API**                 | `useState`, `useRuntimeConfig`, `onMounted`, `computed`      |
 
 ---
 
 ## 2. Tech Stack
 
-| Layer | Technology | Why |
-|---|---|---|
-| Frontend framework | [Nuxt 3](https://nuxt.com) (Vue 3) | SSR-capable, file-based routing, composables |
-| Language | TypeScript | Type safety across client and edge functions |
-| Styling | Tailwind CSS v4 | Utility-first, no build step for CSS |
-| Backend / DB | [Supabase](https://supabase.com) | Postgres + Realtime + Edge Functions in one platform |
-| Edge runtime | Deno (inside Supabase Edge Functions) | Fast cold starts, standard Web APIs |
-| Realtime transport | WebSocket (managed by Supabase) | Sub-100ms delivery of DB change events |
+| Layer              | Technology                            | Why                                                  |
+| ------------------ | ------------------------------------- | ---------------------------------------------------- |
+| Frontend framework | [Nuxt 3](https://nuxt.com) (Vue 3)    | SSR-capable, file-based routing, composables         |
+| Language           | TypeScript                            | Type safety across client and edge functions         |
+| Styling            | Tailwind CSS v4                       | Utility-first, no build step for CSS                 |
+| Backend / DB       | [Supabase](https://supabase.com)      | Postgres + Realtime + Edge Functions in one platform |
+| Edge runtime       | Deno (inside Supabase Edge Functions) | Fast cold starts, standard Web APIs                  |
+| Realtime transport | WebSocket (managed by Supabase)       | Sub-100ms delivery of DB change events               |
 
 ---
 
@@ -87,6 +87,7 @@ A teaching project demonstrating **server-authoritative state**, **Supabase Real
 > **Clients never mutate game state directly. They call an Edge Function, which reads + validates + writes the DB. The DB write fires a Realtime event that updates every client simultaneously.**
 
 This means:
+
 - There is exactly **one source of truth**: the `games` row in Postgres
 - No client can cheat by sending a fake deck or claiming cards they do not have
 - Late-joining clients always get the correct state by reading from the DB
@@ -132,7 +133,7 @@ Client A clicks "Draw" ──▶ POST /play-card
               Client A updates         Client B updates
 ```
 
-The Edge Function is the only thing that ever writes to the `games` table. Clients only ever *read* (via Realtime) and *request actions* (via HTTP POST).
+The Edge Function is the only thing that ever writes to the `games` table. Clients only ever _read_ (via Realtime) and _request actions_ (via HTTP POST).
 
 ---
 
@@ -164,6 +165,7 @@ create table deck_cards(game_id text, card text, position int);
 ```
 
 The normalised approach would require:
+
 - **52 rows** inserted/deleted per shuffle
 - **Transactional updates** across three tables on every card play
 - **JOIN queries** every time you read the game state
@@ -188,10 +190,10 @@ A game in progress in the `games` table:
     "p-abc123": true,
     "p-xyz789": true
   },
-  "deck": ["3♣","8♥","Q♦","2♠","J♣","7♥","..."],
+  "deck": ["3♣", "8♥", "Q♦", "2♠", "J♣", "7♥", "..."],
   "hands": {
-    "p-abc123": ["A♠","K♥","7♦","3♣","Q♠","9♥","2♦"],
-    "p-xyz789": ["5♣","J♥","4♦","8♠","10♣","6♥","A♦"]
+    "p-abc123": ["A♠", "K♥", "7♦", "3♣", "Q♠", "9♥", "2♦"],
+    "p-xyz789": ["5♣", "J♥", "4♦", "8♠", "10♣", "6♥", "A♦"]
   },
   "updated_at": "2026-03-10T14:23:01.000Z"
 }
@@ -267,24 +269,24 @@ The Write-Ahead Log (WAL) is Postgres's internal audit trail. Every insert, upda
 ### How the client subscribes
 
 ```typescript
-const channel = supabase.channel('game:DEMO')
+const channel = supabase.channel("game:DEMO");
 
 channel
   .on(
-    'postgres_changes',
+    "postgres_changes",
     {
-      event: '*',               // INSERT, UPDATE, or DELETE
-      schema: 'public',
-      table: 'games',
-      filter: `id=eq.DEMO`     // only this room's row
+      event: "*", // INSERT, UPDATE, or DELETE
+      schema: "public",
+      table: "games",
+      filter: `id=eq.DEMO`, // only this room's row
     },
     (payload) => {
       // payload.new = the full updated row
       // payload.old = the row before the change
-      game.value = payload.new as GameState
-    }
+      game.value = payload.new as GameState;
+    },
   )
-  .subscribe()
+  .subscribe();
 ```
 
 Every time any Edge Function writes to the `games` row for room `DEMO`, every subscribed client (in any browser, on any device) immediately receives `payload.new` — the complete updated row — and re-renders.
@@ -303,14 +305,14 @@ Edge Functions are TypeScript/Deno functions deployed globally on Supabase's inf
 
 ```typescript
 const res = await fetch(`${SUPABASE_URL}/functions/v1/join-game`, {
-  method: 'POST',
+  method: "POST",
   headers: {
-    'Content-Type': 'application/json',
-    'apikey': SUPABASE_ANON_KEY,
-    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    "Content-Type": "application/json",
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
   },
   body: JSON.stringify({ roomId, playerId, playerName }),
-})
+});
 ```
 
 ### CORS preflight
@@ -318,13 +320,14 @@ const res = await fetch(`${SUPABASE_URL}/functions/v1/join-game`, {
 Browsers send an HTTP `OPTIONS` request before every cross-origin POST. Edge Functions must handle this explicitly:
 
 ```typescript
-if (req.method === 'OPTIONS') {
-  return new Response('ok', {
+if (req.method === "OPTIONS") {
+  return new Response("ok", {
     headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    }
-  })
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers":
+        "authorization, x-client-info, apikey, content-type",
+    },
+  });
 }
 ```
 
@@ -337,11 +340,13 @@ Without this, every fetch call from the browser will fail with a CORS error befo
 **Purpose**: Register a player in the room. Called on page load when a player navigates to `/game/DEMO`.
 
 **Input**:
+
 ```json
 { "roomId": "DEMO", "playerId": "p-abc123", "playerName": "Alice" }
 ```
 
 **Logic**:
+
 ```
 Does the games row for this roomId exist?
 │
@@ -374,11 +379,13 @@ The DB write triggers a Realtime event → all lobby clients see the new player 
 **Purpose**: Mark a player as ready. If every registered player is now ready (and there are at least two), deal cards and start the game.
 
 **Input**:
+
 ```json
 { "roomId": "DEMO", "playerId": "p-abc123" }
 ```
 
 **Logic**:
+
 ```
 Read full game state from DB
 
@@ -410,12 +417,12 @@ AND is the player count >= 2?
 
 ```typescript
 function fisherYates(arr: string[]): string[] {
-  const a = [...arr]
+  const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return a
+  return a;
 }
 ```
 
@@ -424,10 +431,10 @@ This is a mathematically fair shuffle — every permutation of 52 cards is equal
 **Dealing cards**:
 
 ```typescript
-const deck = fisherYates(createDeck())  // shuffled array of 52 strings
+const deck = fisherYates(createDeck()); // shuffled array of 52 strings
 
 for (const id of playerIds) {
-  hands[id] = deck.splice(0, 7)  // removes first 7 from array, returns them
+  hands[id] = deck.splice(0, 7); // removes first 7 from array, returns them
 }
 // deck now contains only the remaining undealt cards
 ```
@@ -440,67 +447,142 @@ for (const id of playerIds) {
 
 ### `play-card`
 
-**Purpose**: A player discards one card from their hand and draws a replacement from the top of the shared deck.
+**Purpose**: A player discards one card from their hand and draws a replacement from the top of the shared deck. The entire operation runs inside a single Postgres transaction with a row lock, so two simultaneous discards can never draw the same card.
 
 **Input**:
+
 ```json
 { "roomId": "DEMO", "playerId": "p-abc123", "card": "A♠" }
 ```
 
 **Logic**:
-```
-Read current game state (deck + hands) from DB
 
+```
+Edge Function validates input → calls supabase.rpc('play_card', ...)
+        │
+        ▼
+Postgres function begins transaction
+        │
+SELECT * FROM games WHERE id = 'DEMO' FOR UPDATE
+        │  (row is now locked — any concurrent call blocks here)
+        │
 Is "A♠" in hands["p-abc123"]?
 │
-└── No → return 400 Bad Request
-         (player cannot play a card they do not hold — server validates this)
+└── No → RAISE EXCEPTION (player cannot play a card they do not hold)
 
-Remove "A♠" from the player's hand:
-  hand.splice(hand.indexOf("A♠"), 1)
+Remove "A♠" from the player's hand
 
 Is the deck non-empty?
 │
-├── Yes → draw = deck.shift()       // remove and return first element
-│         hand.push(draw)           // add drawn card to hand
+├── Yes → draw first card from deck
+│         add drawn card to player's hand
 │         hand still has 7 cards
 │
 └── No  → no replacement drawn
           hand now has 6 cards (deck exhausted)
 
-Write updated hands + deck to DB:
-  UPDATE games SET hands = ..., deck = ...
-
-Realtime fires → all clients update simultaneously
+UPDATE games SET hands = ..., deck = ..., updated_at = now()
+        │
+COMMIT → lock released → Realtime fires → all clients update simultaneously
 ```
 
-**Read-modify-write pattern** — the full code:
+**Postgres function** (run once in the SQL editor, included in `supabase/schema.sql`):
+
+```sql
+create or replace function play_card(
+  p_room_id   text,
+  p_player_id text,
+  p_card      text
+)
+returns jsonb
+language plpgsql
+as $$
+declare
+  v_game     games%rowtype;
+  v_hand     jsonb;
+  v_deck     jsonb;
+  v_card_idx int;
+  v_drawn    text;
+begin
+  -- Lock the row — any concurrent call blocks here until this commit
+  select * into v_game
+  from games
+  where id = p_room_id
+  for update;
+
+  if not found then
+    raise exception 'Game not found: %', p_room_id;
+  end if;
+
+  v_hand := v_game.hands -> p_player_id;
+  v_deck := v_game.deck;
+
+  if v_hand is null then
+    raise exception 'Player % has no hand', p_player_id;
+  end if;
+
+  -- Find 0-based index of card in hand
+  select (ordinality - 1)::int into v_card_idx
+  from jsonb_array_elements_text(v_hand) with ordinality as t(card, ordinality)
+  where card = p_card
+  limit 1;
+
+  if v_card_idx is null then
+    raise exception 'Card % not in hand', p_card;
+  end if;
+
+  -- Remove played card, draw replacement
+  v_hand := v_hand - v_card_idx;
+
+  if jsonb_array_length(v_deck) > 0 then
+    v_drawn := v_deck ->> 0;
+    v_deck  := v_deck - 0;
+    v_hand  := v_hand || jsonb_build_array(v_drawn);
+  end if;
+
+  -- Write back — lock released on commit
+  update games
+  set
+    hands      = jsonb_set(v_game.hands, array[p_player_id], v_hand),
+    deck       = v_deck,
+    updated_at = now()
+  where id = p_room_id;
+
+  return jsonb_build_object(
+    'drew',           v_drawn,
+    'deck_remaining', jsonb_array_length(v_deck)
+  );
+end;
+$$;
+```
+
+**Edge Function** (`supabase/functions/play-card/index.ts`) — input validation + one RPC call:
 
 ```typescript
-const deck  = game.deck  as string[]
-const hands = game.hands as Record<string, string[]>
-const hand  = hands[playerId]
-
-// Validate
-const idx = hand.indexOf(card)
-if (idx === -1) return error('Card not in hand')
-
-// Discard
-hand.splice(idx, 1)
-
-// Draw
-const drawn = deck.length > 0 ? deck.shift()! : null
-if (drawn) hand.push(drawn)
-
-hands[playerId] = hand
-
-// Persist — triggers Realtime for all clients
-await supabase.from('games').update({ deck, hands }).eq('id', roomId)
+const { data, error } = await supabase.rpc("play_card", {
+  p_room_id: roomId,
+  p_player_id: playerId,
+  p_card: card,
+});
 ```
 
-> **Race condition note**: If two players discard simultaneously, two Edge Function invocations run in parallel. Both may read the same deck state and draw the same top card. For a teaching demo this is acceptable. In production, use a Postgres stored procedure with `SELECT ... FOR UPDATE` to lock the row for the duration of the operation.
+Because all the logic lives in the Postgres function, the Edge Function itself is minimal — it just parses the request, calls `rpc()`, and returns the result. The Postgres function handles validation, state mutation, and persistence in a single atomic transaction.
 
-**Output**: `{ "ok": true, "drew": "3♣", "deckRemaining": 23 }`
+**Why `SELECT ... FOR UPDATE` matters:**
+
+```
+Without lock:                        With FOR UPDATE:
+──────────────────────────────       ──────────────────────────────────────
+Call A reads deck: [3♣, 8♥, ...]    Call A: SELECT FOR UPDATE → gets lock
+Call B reads deck: [3♣, 8♥, ...]    Call B: SELECT FOR UPDATE → BLOCKS
+Call A draws 3♣ → writes deck       Call A draws 3♣ → commits → releases lock
+Call B draws 3♣ → overwrites A      Call B unblocks → reads [8♥, ...] → draws 8♥
+Result: 3♣ held by two players      Result: each player holds a unique card
+```
+
+The left column is the classic read-modify-write race condition. The right column is what our Postgres function does: `FOR UPDATE` acquires a row-level lock at read time, so the second concurrent call is forced to wait until the first transaction commits. When it finally reads, it sees the already-updated deck.
+
+**Output**: `{ "ok": true, "drew": "3♣", "deck_remaining": 23 }`
 
 ---
 
@@ -511,17 +593,21 @@ await supabase.from('games').update({ deck, hands }).eq('id', roomId)
 The entire game state lives in one reactive ref, populated from the DB:
 
 ```typescript
-const game = ref<GameState | null>(null)
+const game = ref<GameState | null>(null);
 
 // 1. Subscribe first (so no events are missed)
-subscribe()
+subscribe();
 
 // 2. Fetch current state from DB (handles page refreshes and late joiners)
-const { data } = await supabase.from('games').select('*').eq('id', roomId).maybeSingle()
-if (data) game.value = data as GameState
+const { data } = await supabase
+  .from("games")
+  .select("*")
+  .eq("id", roomId)
+  .maybeSingle();
+if (data) game.value = data as GameState;
 
 // 3. Register player (causes a DB write → Realtime event → all clients update)
-await joinGame()
+await joinGame();
 ```
 
 The Realtime handler simply replaces the entire local state with the new row:
@@ -537,17 +623,17 @@ channel.on('postgres_changes', { event: '*', ... }, (payload) => {
 All derived state is computed from `game.value` — nothing is stored separately:
 
 ```typescript
-const myHand       = computed(() => game.value?.hands[playerId.value] ?? [])
-const deckSize     = computed(() => game.value?.deck.length ?? 0)
-const amIReady     = computed(() => !!game.value?.ready[playerId.value])
-const playerList   = computed(() =>
+const myHand = computed(() => game.value?.hands[playerId.value] ?? []);
+const deckSize = computed(() => game.value?.deck.length ?? 0);
+const amIReady = computed(() => !!game.value?.ready[playerId.value]);
+const playerList = computed(() =>
   Object.entries(game.value?.players ?? {}).map(([id, name]) => ({
     id,
     name,
     isReady: !!game.value?.ready[id],
     cardCount: game.value?.hands[id]?.length ?? 0,
-  }))
-)
+  })),
+);
 ```
 
 Because `game.value` is reactive, Vue automatically re-runs every computed value and re-renders the UI whenever the Realtime event updates it.
@@ -558,9 +644,9 @@ Each browser session generates a random player ID on first load:
 
 ```typescript
 const playerId = useState<string>(
-  'playerId',
-  () => `p-${Math.random().toString(36).slice(2, 8)}`
-)
+  "playerId",
+  () => `p-${Math.random().toString(36).slice(2, 8)}`,
+);
 ```
 
 `useState` in Nuxt is like Vue's `ref` but shared across all components during the same page session. It is **not** persisted across page refreshes — a refresh creates a new player ID. In a real app you would save this to `localStorage` (see Extensions).
@@ -572,14 +658,10 @@ The single page component renders two completely different UIs based on `game.st
 ```vue
 <template>
   <!-- Lobby: player list, ready indicators, Ready button -->
-  <template v-if="!game || game.status === 'lobby'">
-    ...
-  </template>
+  <template v-if="!game || game.status === 'lobby'"> ... </template>
 
   <!-- Game: your hand, other players face-down, deck counter -->
-  <template v-else>
-    ...
-  </template>
+  <template v-else> ... </template>
 </template>
 ```
 
@@ -756,6 +838,7 @@ cp .env.example .env
 ```
 
 Edit `.env`:
+
 ```env
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_ANON_KEY=sb_publishable_...
@@ -778,16 +861,17 @@ In the Supabase dashboard, open the **SQL Editor** and run the full contents of 
 In the Supabase dashboard, go to **Edge Functions → New Function**.
 
 For each function below:
+
 1. Create it with the exact name listed
 2. Paste the file contents into the online editor
 3. Click **Deploy**
 4. Open the function's **Settings** tab and **disable JWT verification**
 
-| Function name | Source file |
-|---|---|
-| `join-game` | `supabase/functions/join-game/index.ts` |
-| `set-ready` | `supabase/functions/set-ready/index.ts` |
-| `play-card` | `supabase/functions/play-card/index.ts` |
+| Function name | Source file                             |
+| ------------- | --------------------------------------- |
+| `join-game`   | `supabase/functions/join-game/index.ts` |
+| `set-ready`   | `supabase/functions/set-ready/index.ts` |
+| `play-card`   | `supabase/functions/play-card/index.ts` |
 
 > **Why disable JWT verification?**
 > Supabase Edge Functions default to expecting a JWT Bearer token signed with your project's secret. The current Supabase anon key format (`sb_publishable_...`) is **not** a JWT — it is an opaque string. Disabling JWT verification allows the function to accept requests authenticated with the anon key. For production, you would use Supabase Auth to issue real JWTs and re-enable this setting.
@@ -811,10 +895,11 @@ Open **two browser tabs** (or two different browsers/devices). Enter different n
 ### Subscribe before fetching
 
 In `onMounted`:
+
 ```typescript
-subscribe()                       // 1. open WebSocket subscription first
-const { data } = await fetchDB()  // 2. fetch current state
-await joinGame()                  // 3. register (causes a DB write → Realtime event)
+subscribe(); // 1. open WebSocket subscription first
+const { data } = await fetchDB(); // 2. fetch current state
+await joinGame(); // 3. register (causes a DB write → Realtime event)
 ```
 
 If you fetch first and subscribe second, you risk missing the Realtime event that fires during `joinGame()`. By subscribing first, you are guaranteed to receive every update.
@@ -831,24 +916,24 @@ You replace the entire local state with `payload.new`. You do not need to merge 
 
 ### JSONB merge requires read-then-write — it is not atomic
 
-The pattern used in `join-game` and `play-card`:
+The pattern used in `join-game`:
 
 ```typescript
-const existing = await db.select()   // read
-const merged   = { ...existing, newField }  // modify in memory
-await db.update(merged)              // write
+const existing = await db.select(); // read
+const merged = { ...existing, newField }; // modify in memory
+await db.update(merged); // write
 ```
 
-Two concurrent requests could read the same state and one could overwrite the other's changes. For this demo, player registrations are infrequent enough that this is safe in practice. Card plays could theoretically collide if two players act within the same millisecond. See the Extensions section for the proper fix using Postgres row locking.
+Two concurrent requests could read the same state and one could overwrite the other's changes. For `join-game`, player registrations are infrequent enough that this is safe in practice. For `play-card`, where two players could discard at the same millisecond, the operation runs inside a Postgres function with `SELECT ... FOR UPDATE` row locking — see section 7 for the full explanation.
 
 ### The `service_role` key bypasses RLS — never expose it in the browser
 
 ```typescript
 // Inside Edge Function — correct, server-side only
-const supabase = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+const supabase = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
 // In the browser — NEVER do this
-const supabase = createClient(url, 'eyJhbGciOiJ...service_role_key...')  // ❌
+const supabase = createClient(url, "eyJhbGciOiJ...service_role_key..."); // ❌
 ```
 
 The service role key has unrestricted access to your entire database. It must only ever exist in server-side code. The anon key is the only key that should ever appear in client-side code.
@@ -860,7 +945,7 @@ The service role key has unrestricted access to your entire database. It must on
 ### Realtime filter uses PostgREST syntax
 
 ```typescript
-filter: `id=eq.${roomId}`
+filter: `id=eq.${roomId}`;
 ```
 
 This is the same filter syntax as the PostgREST query API. Other operators include `gt`, `lt`, `neq`, `in`, `is`. Complex filters (multiple conditions) are not yet supported in `postgres_changes` — you filter on one column only.
@@ -876,9 +961,9 @@ These are left as exercises.
 Store `playerId` in `localStorage` so a player who refreshes the page can rejoin their hand:
 
 ```typescript
-const stored = localStorage.getItem('playerId')
-const playerId = ref(stored ?? `p-${Math.random().toString(36).slice(2, 8)}`)
-localStorage.setItem('playerId', playerId.value)
+const stored = localStorage.getItem("playerId");
+const playerId = ref(stored ?? `p-${Math.random().toString(36).slice(2, 8)}`);
+localStorage.setItem("playerId", playerId.value);
 ```
 
 ### 2. Add Supabase Auth
@@ -886,60 +971,27 @@ localStorage.setItem('playerId', playerId.value)
 Replace random player IDs with anonymous auth sessions:
 
 ```typescript
-const { data } = await supabase.auth.signInAnonymously()
-const playerId = data.user!.id  // stable UUID, persists across refreshes
+const { data } = await supabase.auth.signInAnonymously();
+const playerId = data.user!.id; // stable UUID, persists across refreshes
 ```
 
 Then tighten RLS policies so each player can only read their own hand, not others'.
 
-### 3. Fix the race condition with a Postgres function
-
-Replace the read-modify-write in `play-card` with a Postgres stored procedure that uses row locking:
-
-```sql
-create or replace function play_card(
-  p_room_id   text,
-  p_player_id text,
-  p_card      text
-) returns void language plpgsql as $$
-declare
-  game games%rowtype;
-  hand jsonb;
-  new_card text;
-begin
-  -- Lock the row for the duration of this transaction
-  select * into game from games where id = p_room_id for update;
-
-  hand := game.hands -> p_player_id;
-
-  -- Validate card is in hand
-  if not (hand ? p_card) then
-    raise exception 'Card not in hand';
-  end if;
-
-  -- Remove card, draw replacement...
-  -- update games set ...
-end;
-$$;
-```
-
-Called from the Edge Function as `supabase.rpc('play_card', { p_room_id, p_player_id, p_card })`.
-
-### 4. Add game rules
+### 3. Add game rules
 
 The current `play-card` accepts any card at any time. Add validation for a specific game:
 
 ```typescript
 // Example: must match suit or rank of top discard
-const topDiscard = game.discard_pile.at(-1)
-const validPlay  =
-  card.slice(-1) === topDiscard.slice(-1) ||  // same suit
-  card.slice(0, -1) === topDiscard.slice(0, -1) // same rank
+const topDiscard = game.discard_pile.at(-1);
+const validPlay =
+  card.slice(-1) === topDiscard.slice(-1) || // same suit
+  card.slice(0, -1) === topDiscard.slice(0, -1); // same rank
 
-if (!validPlay) return error('Invalid play — must match suit or rank')
+if (!validPlay) return error("Invalid play — must match suit or rank");
 ```
 
-### 5. Turn enforcement
+### 4. Turn enforcement
 
 Add `current_turn: string` (a player ID) to the games table. `play-card` checks `playerId === game.current_turn` before allowing the action, then rotates to the next player:
 
@@ -950,23 +1002,23 @@ const nextTurn = playerIds[(currentIdx + 1) % playerIds.length]
 await db.update({ current_turn: nextTurn, ... })
 ```
 
-### 6. Spectator mode
+### 5. Spectator mode
 
 Players who navigate to a room with `status = 'playing'` currently see nothing useful. Show them a read-only view: deck size, each player's card count, and a live discard pile — powered by the same `postgres_changes` subscription they already have.
 
-### 7. Reconnection handling
+### 6. Reconnection handling
 
 WebSocket connections drop occasionally on mobile networks. Handle reconnection gracefully:
 
 ```typescript
 channel.subscribe((status) => {
-  if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+  if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
     setTimeout(() => {
-      channel.unsubscribe()
-      subscribe()  // reconnect
-    }, 2000)
+      channel.unsubscribe();
+      subscribe(); // reconnect
+    }, 2000);
   }
-})
+});
 ```
 
 ---
