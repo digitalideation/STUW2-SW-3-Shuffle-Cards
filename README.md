@@ -174,6 +174,10 @@ The JSONB approach treats the entire game state as **one atomic document** per r
 
 Use a separate table when you need to **query individual items** (e.g. "find all games containing the Ace of Spades"). Use JSONB when you always operate on the **collection as a whole**.
 
+This is how storing JSON in a SQL DB feels like:
+
+![How it feels to store JSON in SQL](meme.webp)
+
 ### What the data actually looks like
 
 A game in progress in the `games` table:
