@@ -1,4 +1,4 @@
-# Realtime Multiplayer Card Game — Supabase + Nuxt 3
+# Realtime Multiplayer Card Game — Supabase + Nuxt 4
 
 A teaching project demonstrating **server-authoritative state**, **Supabase Realtime**, and **Edge Functions** through a multiplayer card game. Players join a lobby, ready up simultaneously, receive a dealt hand, and discard cards from a shared deck — all in real time across any number of browser tabs or devices.
 
@@ -33,7 +33,7 @@ A teaching project demonstrating **server-authoritative state**, **Supabase Real
 | **Row-Level Security (RLS)**               | Controlling who can read/write the `games` table             |
 | **Race conditions & why they matter**      | The dealing problem: two clients must not draw the same card |
 | **Lobby pattern**                          | Synchronising multiple players before a game begins          |
-| **Nuxt 3 Composition API**                 | `useState`, `useRuntimeConfig`, `onMounted`, `computed`      |
+| **Nuxt 4 Composition API**                 | `useState`, `useRuntimeConfig`, `onMounted`, `computed`      |
 
 ---
 
@@ -41,7 +41,7 @@ A teaching project demonstrating **server-authoritative state**, **Supabase Real
 
 | Layer              | Technology                            | Why                                                  |
 | ------------------ | ------------------------------------- | ---------------------------------------------------- |
-| Frontend framework | [Nuxt 3](https://nuxt.com) (Vue 3)    | SSR-capable, file-based routing, composables         |
+| Frontend framework | [Nuxt 4](https://nuxt.com) (Vue 3)    | SSR-capable, file-based routing, composables         |
 | Language           | TypeScript                            | Type safety across client and edge functions         |
 | Styling            | Tailwind CSS v4                       | Utility-first, no build step for CSS                 |
 | Backend / DB       | [Supabase](https://supabase.com)      | Postgres + Realtime + Edge Functions in one platform |
@@ -56,7 +56,7 @@ A teaching project demonstrating **server-authoritative state**, **Supabase Real
 ┌─────────────────────────────────────────────────────────────────┐
 │                        BROWSER (Client)                         │
 │                                                                 │
-│  Nuxt 3 / Vue 3                                                 │
+│  Nuxt 4 / Vue 3                                                 │
 │  ┌──────────────┐    HTTP POST     ┌──────────────────────────┐ │
 │  │  game/[id]   │ ───────────────▶ │   Supabase Edge Function │ │
 │  │  .vue        │                  │   (join-game / set-ready  │ │
