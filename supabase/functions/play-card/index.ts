@@ -26,52 +26,26 @@ Deno.serve(async (req) => {
     { auth: { persistSession: false } }
   )
 
-  // Fetch current game state
-  const { data: game, error: fetchError } = await supabase
-    .from('games')
-    .select('deck, hands')
-    .eq('id', roomId)
-    .single()
+  // Single RPC call — the Postgres function handles everything atomically:
+  //   1. SELECT ... FOR UPDATE  →  locks the row
+  //   2. Validates card is in hand
+  //   3. Removes card, draws replacement from deck
+  //   4. UPDATE games           →  writes back and releases lock
+  // Two simultaneous calls are serialised by the row lock, not interleaved.
+  const { data, error } = await supabase.rpc('play_card', {
+    p_room_id:   roomId,
+    p_player_id: playerId,
+    p_card:      card,
+  })
 
-  if (fetchError || !game) {
-    return new Response(JSON.stringify({ error: 'Game not found' }), {
-      status: 404, headers: { ...CORS, 'Content-Type': 'application/json' },
+  if (error) {
+    const status = error.message.includes('not found') ? 404 : 400
+    return new Response(JSON.stringify({ error: error.message }), {
+      status, headers: { ...CORS, 'Content-Type': 'application/json' },
     })
   }
 
-  const deck = game.deck as string[]
-  const hands = game.hands as Record<string, string[]>
-  const playerHand = hands[playerId] ?? []
-
-  // Validate the card is actually in the player's hand
-  const cardIndex = playerHand.indexOf(card)
-  if (cardIndex === -1) {
-    return new Response(JSON.stringify({ error: 'Card not in hand' }), {
-      status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
-    })
-  }
-
-  // Discard the played card
-  playerHand.splice(cardIndex, 1)
-
-  // Draw a replacement from the top of the deck (if any remain)
-  const drawnCard = deck.length > 0 ? deck.shift()! : null
-  if (drawnCard) playerHand.push(drawnCard)
-
-  hands[playerId] = playerHand
-
-  const { error: updateError } = await supabase
-    .from('games')
-    .update({ deck, hands, updated_at: new Date().toISOString() })
-    .eq('id', roomId)
-
-  if (updateError) {
-    return new Response(JSON.stringify({ error: updateError.message }), {
-      status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
-    })
-  }
-
-  return new Response(JSON.stringify({ ok: true, drew: drawnCard, deckRemaining: deck.length }), {
+  return new Response(JSON.stringify({ ok: true, ...data }), {
     headers: { ...CORS, 'Content-Type': 'application/json' },
   })
 })
